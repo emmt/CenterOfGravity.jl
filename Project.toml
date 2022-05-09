@@ -3,6 +3,10 @@ uuid = "d98d927a-eebc-4e2e-bfd8-b8854602986e"
 authors = ["Éric Thiébaut <eric.thiebaut@univ-lyon1.fr> and contributors"]
 version = "0.1.0"
 
+[deps]
+CartesianBoxes = "f894539e-422c-4c16-819a-0e1d0163d378"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+
 [compat]
 julia = "1.5"
 
