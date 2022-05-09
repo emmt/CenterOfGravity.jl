@@ -48,10 +48,11 @@ Cartesian index, etc.), but the result `cog` is always a 2-tuple of
 floating-point values.
 
 The keyword `maxiter` (1 by default) may be used to specify the maximum number
-of iterations of the algorithm.  At each iteration, the algorithm updates the
-position of the center of gravity by moving the sliding window at the previous
-estimate of this position (initially specified by argument `pos`).  The `k`-th
-coordinate of the new center of gravity is computed as:
+of iterations of the algorithm (at least one iteration is performed).  At each
+iteration, the algorithm updates the position of the center of gravity by
+moving the sliding window at the previous estimate of this position (initially
+specified by argument `pos`).  The `k`-th coordinate of the new center of
+gravity is computed as:
 
     cog[k] = (sum_{i ∈ R} img[i]*win[i-j]*x[i][k])/
         (sum_{i ∈ R} img[i]*win[i-j])
@@ -84,6 +85,12 @@ restrict the computations to a rectangular region of the image while preserving
 image coordinates:
 
     center_of_gravity(WindowedArray(img, 21:63, 23:65), win, pos)
+
+For consistency with [`center_of_gravity_with_covariance`](@ref), keyword
+`precision` can be specified to provide the pixel-wise precision of the image
+`img`.  If specified, all its entries must be nonnegative (this is not checked)
+and only pixels with non-zero precision are taken into account in the
+computation of the center of gravity (in addition of other selection rules).
 
 !!! note
     If algorithm is fully specified, i.e. as `alg = Val(:...)`, the code does
@@ -136,19 +143,22 @@ end
 #       as it is much more flexible and yet readable (only the computation of
 #       the "weights" depends on the algorithm).  The same kind of conclusions
 #       have been made for the `LocalFilter` package.
-function center_of_gravity(alg::Val,
-                           img::AbstractMatrix{T},
-                           win::SlidingWindow{<:Union{T,Bool},2},
-                           pos::NTuple{2,T};
-                           maxiter::Int = 1,
-                           verbose::Bool = false) where {T<:AbstractFloat}
-    if maxiter ≤ 0
-        return pos
-    end
+function center_of_gravity(
+    alg::Val,
+    img::AbstractMatrix{T},
+    win::SlidingWindow{<:Union{T,Bool},2},
+    pos::NTuple{2,T};
+    precision::Union{Nothing,AbstractMatrix{T}} = nothing,
+    maxiter::Int = 1,
+    verbose::Bool = false) where {T<:AbstractFloat}
 
     # Extract the "supports" of the image and sliding window.
     img_box = CartesianBox(img) # image support
     win_box = CartesianBox(win) # sliding window support
+    if precision !== nothing
+        CartesianBox(precision) == img_box || error(
+            "array of pixel precisions and image have different indices")
+    end
 
     # Split initial position in coordinates and round them to the nearest
     # pixel.
@@ -156,6 +166,7 @@ function center_of_gravity(alg::Val,
     j1, j2 = round(Int, c1), round(Int, c2)
 
     # Iterate algorithm.
+    z = zero(T)
     iter = 0
     verbose && println("iter: $iter, cog: ($c1, $c2)")
     while true
@@ -173,24 +184,24 @@ function center_of_gravity(alg::Val,
         # with `k = offsets(win)`.
         I1, I2 = Tuple(R) # split ROI along dimensions
         k1, k2 = offsets(win) # split offsets along dimensions
-        s0, s1, s2 = cog_loop(
-            img, parent(win),
+        u0, u1, u2 = cog_loop(
+            precision, img, parent(win),
             I1, j1 - k1, c1,
             I2, j2 - k2, c2,
-            (zero(T), zero(T), zero(T)), # initial state
-            (state, a, b, x1, x2) -> (
-                w = cog_weight(alg, a, b);
+            (z, z, z), # initial state
+            (state, p, a, b, x1, x2) -> (
+                w = cog_weight(alg, p, a, b);
                 return (state[1] + w,
                         state[2] + w*x1,
                         state[3] + w*x2)))
 
         # Update center of gravity.
-        if s0 ≤ zero(T)
+        if u0 ≤ z
             # No changes.
             break
         end
-        c1 += s1/s0
-        c2 += s2/s0
+        c1 += u1/u0
+        c2 += u2/u0
 
         # Increment number of iterations.
         iter += 1
@@ -213,29 +224,244 @@ function center_of_gravity(alg::Val,
 end
 
 """
-    cog_weight(alg, a, b) -> w
+    center_of_gravity_with_covariance([alg = :simple,] img, win, pos)
+    -> (x1, x2, c11, c12, c22)
 
-yields the weight at a given pixel for computing the centrer of gravity by
-algorithm `alg` and with `a` the pixel intensity in the image and `b` the
-corresponding value in the slidig window.  Typically `w = a*b`.
+yields the center of gravity and its covariance in image `img` using a sliding
+window `win` centered at initial position `pos` (rounded to nearest pixel) to
+select and weight the pixels taken into account for computing the center of
+gravity.
+
+The result is the 5-tuple `(x1,x2,c11,c12,c22)` where `(x1,x2)` are the
+coordinates of the center of gravity while `[c11 c12; c12 c22]` is the
+associated covariance matrix.
+
+See [`center_of_gravity`](@ref) for a description of common parameters.
+
+Keyword `precision` can be specified to provide the pixel-wise precision of the
+image `img`.  If specified, all its entries must be nonnegative (this is not
+checked) and only pixels with non-zero precision are taken into account in the
+computation of the center of gravity (in addition of other selection rules).
+If not specified, all pixels are assumed valid, the data noise is assumed
+i.i.d. (independent and identically distributed), and the returned covariance
+must be scaled by the noise variance.
+
+""" center_of_gravity_with_covariance
+
+# Initial position specified as 2 coordinates.
+function center_of_gravity_with_covariance(
+    img::AbstractMatrix{T},
+    win::SlidingWindow{<:Union{T,Bool},2},
+    pos::Vararg{Real,2};
+    kwds...) where {T<:AbstractFloat}
+    return center_of_gravity_with_covariance(img, win, pos; kwds...)
+end
+function center_of_gravity_with_covariance(
+    alg::Union{Symbol,Val},
+    img::AbstractMatrix{T},
+    win::SlidingWindow{<:Union{T,Bool},2},
+    pos::Vararg{Real,2};
+    kwds...) where {T<:AbstractFloat}
+    return center_of_gravity_with_covariance(alg, img, win, pos; kwds...)
+end
+
+# Provide default algorithm.
+function center_of_gravity_with_covariance(
+    img::AbstractMatrix{T},
+    win::SlidingWindow{<:Union{T,Bool},2},
+    pos::Position;
+    kwds...) where {T<:AbstractFloat}
+    return center_of_gravity_with_covariance(:simple, img, win, pos; kwds...)
+end
+
+# Convert algorithm and initial position.
+function center_of_gravity_with_covariance(
+    alg::Union{Symbol,Val},
+    img::AbstractMatrix{T},
+    win::SlidingWindow{<:Union{T,Bool},2},
+    pos::Position;
+    kwds...) where {T<:AbstractFloat}
+    return center_of_gravity_with_covariance(to_algorithm(alg), img, win,
+                                             to_position(T, pos); kwds...)
+end
+
+function center_of_gravity_with_covariance(
+    alg::Val,
+    img::AbstractMatrix{T},
+    win::SlidingWindow{<:Union{T,Bool},2},
+    pos::NTuple{2,T};
+    precision::Union{Nothing,AbstractMatrix{T}} = nothing,
+    maxiter::Int = 1,
+    verbose::Bool = false) where {T<:AbstractFloat}
+
+    # Extract the "supports" of the image and sliding window.
+    img_box = CartesianBox(img) # image support
+    win_box = CartesianBox(win) # sliding window support
+    if precision !== nothing
+        CartesianBox(precision) == img_box || error(
+            "array of pixel precisions and image have different indices")
+    end
+
+    # Split initial position in coordinates and round them to the nearest
+    # pixel.
+    c1, c2 = pos
+    j1, j2 = round(Int, c1), round(Int, c2)
+
+    # Iterate algorithm.
+    z = zero(T)
+    iter = 0
+    verbose && println("iter: $iter, cog: ($c1, $c2)")
+    while true
+        # Determine the region `R` such that `∀ i ∈ R`, `img[i]` and `win[i-j]`
+        # are both valid with `j = (j1,j2)` the position of the center of the
+        # sliding window relative to the image.
+        R = img_box ∩ (win_box + (j1,j2)) # ROI for indices `i`
+
+        # Compute the terms needed by the center of gravity.  To avoid adding
+        # multiple index offsets when indexing the sliding window, we note
+        # that:
+        #
+        #    win[i - j] -> parent(win)[i - (j - k)]
+        #
+        # with `k = offsets(win)`.
+        I1, I2 = Tuple(R) # split ROI along dimensions
+        k1, k2 = offsets(win) # split offsets along dimensions
+        u0, u1, u2 = cog_loop(
+            precision, img, parent(win),
+            I1, j1 - k1, c1,
+            I2, j2 - k2, c2,
+            (z, z, z), # initial state
+            (state, p, a, b, x1, x2) -> (
+                w = cog_weight(alg, p, a, b);
+                return (state[1] + w,
+                        state[2] + w*x1,
+                        state[3] + w*x2)))
+
+        # Update center of gravity.
+        if u0 ≤ z
+            # No changes.
+            return (c1, c2, T(Inf), z, T(Inf))
+        end
+        c1 += u1/u0
+        c2 += u2/u0
+
+        # Update position of the sliding window and assume convergence if the
+        # sliding window will not move.
+        j1_prev, j1 = j1, round(Int, c1)
+        j2_prev, j2 = j2, round(Int, c2)
+        final = (j1 == j1_prev)&(j2 == j2_prev)
+
+        # Increment number of iterations and assume convergence if the maximum
+        # number of iterations have been reached.
+        iter += 1
+        verbose && println("iter: $iter, cog: ($c1, $c2)")
+        final |= (iter ≥ maxiter)
+
+        if final
+            # Compute quantities needed for the covariance.
+            C = cog_loop(
+                precision, img, parent(win),
+                I1, j1 - k1, c1,
+                I2, j2 - k2, c2,
+                (z, z, z, z, z, z),
+                (C, p, a, b, x1, x2) -> (
+                    w = cog_cov_weight(alg, p, a, b);
+                    # FIXME: factorize?
+                    return (C[1] + w,
+                            C[2] + w*x1,
+                            C[3] + w*x2,
+                            C[4] + w*x1*x1,
+                            C[5] + w*x1*x2,
+                            C[6] + w*x2*x2)))
+            # Form the covariance matrix of u = (u0,u1,u2)'.
+            Cu = SMatrix{3,3,T}(C[1], C[2], C[3],
+                                C[2], C[4], C[5],
+                                C[3], C[5], C[6])
+            # Form the Jacobian matrix ∂x/∂u with x = (c1,c2)' (NOTE: arguments
+            # of `SMatrix` are given in column-major storage order so it looks
+            # like J' not J).
+            J = SMatrix{2,3,T}(-u1/u0^2, -u2/u0^2,
+                               1/u0,     z,
+                               z,        1/u0)
+            # Form the covariance matrix of x.
+            Cx = J*Cu*J'
+            return (c1, c2, Cx[1,1], Cx[1,2], Cx[2,2])
+        end
+    end
+end
 
 """
-cog_weight(::Val{:simple}, a::T, b::Bool) where {T<:AbstractFloat} =
-    # Use `ifelse` to avoid branching.
+    cog_weight(alg, [p,] a, b) -> w
+
+yields the weight of a given pixel in the terms required by the centrer of
+gravity as computed by algorithm `alg` and with `p ≥ 0` the precision of the
+pixel (optional), `a` the pixel intensity and `b` the corresponding value in
+the sliding window.  Typically `w = a*b`.  If the precision `p` is `nothing`,
+it is assumed that all pixels have non-zero precision.
+
+"""
+cog_weight(::Val{:simple}, ::Nothing, a::T, b::T) where {T<:AbstractFloat} = a*b
+
+# NOTE: We use `ifelse` and `&` (not `&&`) to avoid branching.
+cog_weight(::Val{:simple}, ::Nothing, a::T, b::Bool) where {T<:AbstractFloat} =
     ifelse(b, a, zero(T))
 
-cog_weight(::Val{:simple}, a::T, b::T) where {T<:AbstractFloat} = a*b
-
-cog_weight(::Val{:nonnegative}, a::T, b::Bool) where {T<:AbstractFloat} =
-    # Use `ifelse` and `&` (not `&&`) to avoid branching.
-    ifelse((a > zero(T))&b, a, zero(T))
-
-cog_weight(::Val{:nonnegative}, a::T, b::T) where {T<:AbstractFloat} =
-    # Use `ifelse` and `&` (not `&&`) to avoid branching.
+cog_weight(::Val{:nonnegative}, ::Nothing, a::T, b::T) where {T<:AbstractFloat} =
     ifelse((a > zero(T))&(b > zero(T)), a*b, zero(T))
 
+cog_weight(::Val{:nonnegative}, ::Nothing, a::T, b::Bool) where {T<:AbstractFloat} =
+    ifelse((a > zero(T))&b, a, zero(T))
+
+# Idem but with precision specified (p ≥ 0 is assumed).
+cog_weight(::Val{:simple}, p::T, a::T, b::T) where {T<:AbstractFloat} =
+    ifelse((p > zero(T)), a*b, zero(T))
+
+cog_weight(::Val{:simple}, p::T, a::T, b::Bool) where {T<:AbstractFloat} =
+    ifelse((p > zero(T))&b, a, zero(T))
+
+cog_weight(::Val{:nonnegative}, p::T, a::T, b::T) where {T<:AbstractFloat} =
+    ifelse((p > zero(T))&(a > zero(T))&(b > zero(T)), a*b, zero(T))
+
+cog_weight(::Val{:nonnegative}, p::T, a::T, b::Bool) where {T<:AbstractFloat} =
+    ifelse((p > zero(T))&(a > zero(T))&b, a, zero(T))
+
 """
-    cog_loop(A, B, I1,j1,c1, I2,j2,c2, state, update)
+    cog_cov_weight(alg, p, a, b) -> w
+
+yields the weight of a given pixel in the terms required to estimate the
+covariance of the centrer of gravity as computed by algorithm `alg` and with `p
+≥ 0` the precision of the pixel (optional), `a` the pixel intensity, and `b`
+the corresponding value in the sliding window.  Typically `w = b^2/p`.  If the
+precision `p` is `nothing`, it is assumed that the noise is i.i.d. and the
+resulting covariance has to be multiplied by the variance of the noise.
+
+"""
+cog_cov_weight(::Val{:simple}, ::Nothing, a::T, b::T) where {T<:AbstractFloat} = b^2
+
+cog_cov_weight(::Val{:simple}, ::Nothing, a::T, b::Bool) where {T<:AbstractFloat} =
+    ifelse(b, one(T), zero(T))
+
+cog_cov_weight(::Val{:nonnegative}, ::Nothing, a::T, b::T) where {T<:AbstractFloat} =
+    ifelse((a > zero(T))&(b > zero(T)), b^2, zero(T))
+
+cog_cov_weight(::Val{:nonnegative}, ::Nothing, a::T, b::Bool) where {T<:AbstractFloat} =
+    ifelse((a > zero(T))&b, one(T), zero(T))
+
+# Idem but with precision specified (p ≥ 0 is assumed).
+cog_cov_weight(::Val{:simple}, p::T, a::T, b::T) where {T<:AbstractFloat} =
+    ifelse((p > zero(T)), b^2/p, zero(T))
+
+cog_cov_weight(::Val{:simple}, p::T, a::T, b::Bool) where {T<:AbstractFloat} =
+    ifelse((p > zero(T))&b, one(T)/p, zero(T))
+
+cog_cov_weight(::Val{:nonnegative}, p::T, a::T, b::T) where {T<:AbstractFloat} =
+    ifelse((p > zero(T))&(a > zero(T))&(b > zero(T)), b^2/p, zero(T))
+
+cog_cov_weight(::Val{:nonnegative}, p::T, a::T, b::Bool) where {T<:AbstractFloat} =
+    ifelse((p > zero(T))&(a > zero(T))&b, one(T)/p, zero(T))
+
+"""
+    cog_loop([P,] A, B, I1,j1,c1, I2,j2,c2, state, update)
 
 runs the loop for computing the center of gravity (COG).  This is equivalent to:
 
@@ -244,8 +470,16 @@ runs the loop for computing the center of gravity (COG).  This is equivalent to:
     end
     return state
 
+If argument `P` is specifed then:
+
+    for i2 in I2, i1 in I1
+        state = update(state, P[i1,i2], A[i1,i2], B[i1-j1,i2-j2], i1 - c1, i2 - c2)
+    end
+    return state
+
 """
-function cog_loop(A::AbstractMatrix{T},
+function cog_loop(::Nothing,
+                  A::AbstractMatrix{T},
                   B::UniformlyTrue,
                   I1::AbstractUnitRange{Int}, j1::Int, c1::T,
                   I2::AbstractUnitRange{Int}, j2::Int, c2::T,
@@ -254,13 +488,14 @@ function cog_loop(A::AbstractMatrix{T},
         x2 = T(i2) - c2
         for i1 in I1 # FIXME: slower with `@simd`
             x1 = T(i1) - c1
-            state = update(state, A[i1,i2], true, x1, x2)
+            state = update(state, nothing, A[i1,i2], true, x1, x2)
         end
     end
     return state
 end
 
-function cog_loop(A::AbstractMatrix{T},
+function cog_loop(::Nothing,
+                  A::AbstractMatrix{T},
                   B::AbstractMatrix,
                   I1::AbstractUnitRange{Int}, j1::Int, c1::T,
                   I2::AbstractUnitRange{Int}, j2::Int, c2::T,
@@ -269,7 +504,39 @@ function cog_loop(A::AbstractMatrix{T},
         x2 = T(i2) - c2
         for i1 in I1 # FIXME: slower with `@simd`
             x1 = T(i1) - c1
-            state = update(state, A[i1,i2], B[i1-j1,i2-j2], x1, x2)
+            state = update(state, nothing, A[i1,i2], B[i1-j1,i2-j2], x1, x2)
+        end
+    end
+    return state
+end
+
+function cog_loop(P::AbstractMatrix{T},
+                  A::AbstractMatrix{T},
+                  B::UniformlyTrue,
+                  I1::AbstractUnitRange{Int}, j1::Int, c1::T,
+                  I2::AbstractUnitRange{Int}, j2::Int, c2::T,
+                  state, update) where {T<:AbstractFloat}
+    @inbounds for i2 in I2
+        x2 = T(i2) - c2
+        for i1 in I1 # FIXME: slower with `@simd`
+            x1 = T(i1) - c1
+            state = update(state, P[i1,i2], A[i1,i2], true, x1, x2)
+        end
+    end
+    return state
+end
+
+function cog_loop(P::AbstractMatrix{T},
+                  A::AbstractMatrix{T},
+                  B::AbstractMatrix,
+                  I1::AbstractUnitRange{Int}, j1::Int, c1::T,
+                  I2::AbstractUnitRange{Int}, j2::Int, c2::T,
+                  state, update) where {T<:AbstractFloat}
+    @inbounds for i2 in I2
+        x2 = T(i2) - c2
+        for i1 in I1 # FIXME: slower with `@simd`
+            x1 = T(i1) - c1
+            state = update(state, P[i1,i2], A[i1,i2], B[i1-j1,i2-j2], x1, x2)
         end
     end
     return state
