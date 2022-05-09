@@ -4,7 +4,8 @@ export
     SlidingWindow,
     WindowedArray,
     center_of_gravity,
-    center_of_gravity_with_covariance
+    center_of_gravity_with_covariance,
+    center_of_gravity_with_precision
 
 using CartesianBoxes
 using StaticArrays

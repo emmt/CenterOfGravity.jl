@@ -391,6 +391,31 @@ function center_of_gravity_with_covariance(
 end
 
 """
+    center_of_gravity_with_precision([alg = :simple,] img, win, pos)
+    -> (x1, x2, w11, w12, w22)
+
+yields the center of gravity and its precision matrix in image `img` using a
+sliding window `win` centered at initial position `pos` (rounded to nearest
+pixel) to select and weight the pixels taken into account for computing the
+center of gravity.
+
+The result is the 5-tuple `(x1,x2,w11,w12,w22)` where `(x1,x2)` are the
+coordinates of the center of gravity while `[w11 w12; w12 w22]` is the
+associated precision matrix.
+
+See [`center_of_gravity_with_covariance`](@ref) for a description of common
+parameters and their interpretation to compute the center of gravity and
+associated covariance matrix.
+
+"""
+function center_of_gravity_with_precision(args...; kwds...)
+    x1, x2, C_11, C_12, C_22 = center_of_gravity_with_covariance(
+        args...; kwds...)
+    q = 1/(C_11*C_22 - C_12^2)
+    return (x1, x2, q*C_22, -q*C_12, q*C_11)
+end
+
+"""
     cog_weight(alg, [p,] a, b) -> w
 
 yields the weight of a given pixel in the terms required by the centrer of
