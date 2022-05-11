@@ -97,7 +97,7 @@ function SlidingWindow(wgt::P,
     return SlidingWindow{Bool,N,P,I}(wgt, inds, off, dims)
 end
 
-# Cosntructors for weighted sliding windows.
+# Constructors for weighted sliding windows.
 SlidingWindow(wgt::AbstractArray) =
     SlidingWindow(wgt, map(to_sliding_axis, size(wgt)))
 SlidingWindow(wgt::AbstractArray{T,N}, inds::Vararg{SlidingWindowAxis,N}) where {T,N} =
