@@ -156,8 +156,8 @@ function center_of_gravity(
     img_box = CartesianBox(img) # image support
     win_box = CartesianBox(win) # sliding window support
     if precision !== nothing
-        CartesianBox(precision) == img_box || error(
-            "array of pixel precisions and image have different indices")
+        img_box ⊆ CartesianBox(precision) || error(
+            "indices in precision array must contain all indices of image array")
     end
 
     # Split initial position in coordinates and round them to the nearest
@@ -298,8 +298,8 @@ function center_of_gravity_with_covariance(
     img_box = CartesianBox(img) # image support
     win_box = CartesianBox(win) # sliding window support
     if precision !== nothing
-        CartesianBox(precision) == img_box || error(
-            "array of pixel precisions and image have different indices")
+        img_box ⊆ CartesianBox(precision) || error(
+            "indices in precision array must contain all indices of image array")
     end
 
     # Split initial position in coordinates and round them to the nearest
@@ -358,8 +358,16 @@ function center_of_gravity_with_covariance(
         final |= (iter ≥ maxiter)
 
         if final
-            # Compute quantities needed for the covariance.
-            C = cog_loop(
+            #
+            # Compute the coefficients of:
+            #
+            #     Cu = [C1  C2  C3;
+            #           C2  C4  C5;
+            #           C3  C5  C6]
+            #
+            # which is the covariance matrix of u = (u0,u1,u2)'.
+            #
+            C1, C2, C3, C4, C5, C6 = cog_loop(
                 precision, img, parent(win),
                 I1, j1 - k1, c1,
                 I2, j2 - k2, c2,
@@ -373,20 +381,14 @@ function center_of_gravity_with_covariance(
                             C[4] + w*x1*x1,
                             C[5] + w*x1*x2,
                             C[6] + w*x2*x2)))
-            # Extract the coefficients of the covariance matrix Cu of
-            # u = (u0,u1,u2)' which is:
             #
-            #     Cu = [C[1]  C[2]  C[3];
-            #           C[2]  C[4]  C[5];
-            #           C[3]  C[5]  C[6]]
-            #
-            C1, C2, C3, C4, C5, C6 = C
-            #
-            # Compute the coefficients J1, J2, and J3 of the Jacobian matrix
-            # ∂x/∂u with x = (c1,c2)' which is:
+            # Compute the coefficients J1, J2, and J3 of:
             #
             #     J = [J1 J2 0; J3 0 J2] = [-u1/u0^2  1/u0  0;
             #                               -u2/u0^2   0   1/u0]
+            #
+            # which is the Jacobian matrix ∂x/∂u with x = (c1,c2)'.
+            #
             J1 = -u1/u0^2
             J2 = 1/u0
             J3 = -u2/u0^2
