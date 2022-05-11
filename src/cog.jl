@@ -345,17 +345,21 @@ function center_of_gravity_with_covariance(
         c1 += u1/u0
         c2 += u2/u0
 
-        # Update position of the sliding window and assume convergence if the
-        # sliding window will not move.
-        j1_prev, j1 = j1, round(Int, c1)
-        j2_prev, j2 = j2, round(Int, c2)
-        final = (j1 == j1_prev)&(j2 == j2_prev)
-
         # Increment number of iterations and assume convergence if the maximum
-        # number of iterations have been reached.
+        # number of iterations have been reached.  NOTE: It is important to not
+        # change offsets (j1,j2) once convergence of the algorithm has been
+        # decided (because the code to integrate the terms of the covariance
+        # could use out of bound indices).
         iter += 1
         verbose && println("iter: $iter, cog: ($c1, $c2)")
-        final |= (iter ≥ maxiter)
+        final = (iter ≥ maxiter)
+        if !final
+            # Update position of the sliding window and assume convergence if
+            # the sliding window will not move (see above note).
+            j1_prev, j1 = j1, round(Int, c1)
+            j2_prev, j2 = j2, round(Int, c2)
+            final = (j1 == j1_prev)&(j2 == j2_prev)
+        end
 
         if final
             #

@@ -191,16 +191,16 @@ maxabsdif(a, b) = maximum(abs.(a .- b))
             dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    for r in (1 => (9.039929, 21.050560, 0.107949, -0.086415, 0.098660),
-              2 => (8.957942, 21.617320, 0.022160, -0.000101, 0.019831),
-              3 => (8.941763, 21.639933, 0.023928,  0.000032, 0.024067))
+    for r in (1 => (9.039929, 21.050560, 0.152842, -0.157663, 0.246084),
+              2 => (8.957942, 21.617320, 0.023743, -0.000187, 0.025506),
+              3 => (8.941763, 21.639933, 0.023928, 0.000032, 0.024067))
         @test maxabsdif(center_of_gravity_with_covariance(
             dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    for r in (1 => (9.039929, 21.050560, 0.010270, -0.008412, 0.009795),
-              2 => (8.957942, 21.617320, 0.002074, -0.000011, 0.001870),
-              3 => (8.941763, 21.639933, 0.002233,  0.000003, 0.002245))
+    for r in (1 => (9.039929, 21.050560, 0.014310, -0.014824, 0.023063),
+              2 => (8.957942, 21.617320, 0.002216, -0.000018, 0.002381),
+              3 => (8.941763, 21.639933, 0.002233, 0.000003, 0.002245))
         @test maxabsdif(center_of_gravity_with_covariance(
             dat, win, c0...; maxiter=r.first, precision=wgt),
                         r.second) ≤ 1e-6
@@ -214,15 +214,15 @@ maxabsdif(a, b) = maximum(abs.(a .- b))
             :nonnegative, dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    for r in (1 => (9.339042, 20.753295, 0.040542, -0.035490, 0.049035),
-              2 => (8.974022, 21.604980, 0.012055, -0.000072, 0.012830),
+    for r in (1 => (9.339042, 20.753295, 0.060124, -0.066475, 0.120475),
+              2 => (8.974022, 21.604980, 0.013091,  0.000022, 0.016631),
               3 => (8.961886, 21.677506, 0.012774, -0.000589, 0.013819))
         @test maxabsdif(center_of_gravity_with_covariance(
             :nonnegative, dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    for r in (1 => (9.339042, 20.753295, 0.004028, -0.003626, 0.005078),
-              2 => (8.974022, 21.604980, 0.001160, -0.000013, 0.001241),
+    for r in (1 => (9.339042, 20.753295, 0.005790, -0.006414, 0.011508),
+              2 => (8.974022, 21.604980, 0.001254, -0.000005, 0.001583),
               3 => (8.961886, 21.677506, 0.001222, -0.000053, 0.001317))
         @test maxabsdif(center_of_gravity_with_covariance(
             :nonnegative, dat, win, c0...; maxiter=r.first, precision=wgt),
@@ -239,20 +239,20 @@ maxabsdif(a, b) = maximum(abs.(a .- b))
             dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    # FIXME: for r in (1 => (9.669801, 20.649462, 0.145952, -0.122823, 0.179676),
-    # FIXME:           2 => (8.930564, 21.634711, 0.015880, -0.001208, 0.013889),
-    # FIXME:           3 => (8.976497, 21.650224, 0.014105, -0.000008, 0.014217))
-    # FIXME:     @test maxabsdif(center_of_gravity_with_covariance(
-    # FIXME:         dat, win, c0...; maxiter=r.first, precision=nothing),
-    # FIXME:                     r.second) ≤ 1e-6
-    # FIXME: end
-    # FIXME: for r in (1 => (9.669801, 20.649462, 0.013782, -0.011839, 0.017608),
-    # FIXME:           2 => (8.930564, 21.634711, 0.001525, -0.000127, 0.001351),
-    # FIXME:           3 => (8.976497, 21.650224, 0.001349, -0.000001, 0.001359))
-    # FIXME:     @test maxabsdif(center_of_gravity_with_covariance(
-    # FIXME:         dat, win, c0...; maxiter=r.first, precision=wgt),
-    # FIXME:                     r.second) ≤ 1e-6
-    # FIXME: end
+    for r in (1 => (9.669801, 20.649462, 0.181703, -0.203001, 0.342381),
+              2 => (8.930564, 21.634711, 0.017472, -0.002954, 0.016820),
+              3 => (8.976497, 21.650224, 0.014105, -0.000008, 0.014217))
+        @test maxabsdif(center_of_gravity_with_covariance(
+            dat, win, c0...; maxiter=r.first, precision=nothing),
+                        r.second) ≤ 1e-6
+    end
+    for r in (1 => (9.669801, 20.649462, 0.016932, -0.018973, 0.031999),
+              2 => (8.930564, 21.634711, 0.001668, -0.000284, 0.001615),
+              3 => (8.976497, 21.650224, 0.001349, -0.000001, 0.001359))
+        @test maxabsdif(center_of_gravity_with_covariance(
+            dat, win, c0...; maxiter=r.first, precision=wgt),
+                        r.second) ≤ 1e-6
+    end
 
     # Idem but omitting negative pixels.
     for r in (1 => (9.943275, 20.305350),
@@ -262,20 +262,20 @@ maxabsdif(a, b) = maximum(abs.(a .- b))
             :nonnegative, dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    # FIXME: for r in (1 => (9.943275, 20.305350, 0.060618, -0.056739, 0.104852),
-    # FIXME:           2 => (9.013273, 21.569760, 0.009997, -0.001412, 0.011059),
-    # FIXME:           3 => (8.978609, 21.663092, 0.008630,  0.000421, 0.009745))
-    # FIXME:     @test maxabsdif(center_of_gravity_with_covariance(
-    # FIXME:         :nonnegative, dat, win, c0...; maxiter=r.first, precision=nothing),
-    # FIXME:                     r.second) ≤ 1e-6
-    # FIXME: end
-    # FIXME: for r in (1 => (9.943275, 20.305350, 0.005875, -0.005579, 0.010391),
-    # FIXME:           2 => (9.013273, 21.569760, 0.000993, -0.000151, 0.001101),
-    # FIXME:           3 => (8.978609, 21.663092, 0.000850,  0.000038, 0.000951))
-    # FIXME:     @test maxabsdif(center_of_gravity_with_covariance(
-    # FIXME:         :nonnegative, dat, win, c0...; maxiter=r.first, precision=wgt),
-    # FIXME:                     r.second) ≤ 1e-6
-    # FIXME: end
+    for r in (1 => (9.943275, 20.305350, 0.069748, -0.077101, 0.145674),
+              2 => (9.013273, 21.569760, 0.010500, -0.002772, 0.014530),
+              3 => (8.978609, 21.663092, 0.008630,  0.000421, 0.009745))
+        @test maxabsdif(center_of_gravity_with_covariance(
+            :nonnegative, dat, win, c0...; maxiter=r.first, precision=nothing),
+                        r.second) ≤ 1e-6
+    end
+    for r in (1 => (9.943275, 20.305350, 0.006657, -0.007382, 0.013914),
+              2 => (9.013273, 21.569760, 0.001038, -0.000274, 0.001413),
+              3 => (8.978609, 21.663092, 0.000850,  0.000038, 0.000951))
+        @test maxabsdif(center_of_gravity_with_covariance(
+            :nonnegative, dat, win, c0...; maxiter=r.first, precision=wgt),
+                        r.second) ≤ 1e-6
+    end
 
 end
 
