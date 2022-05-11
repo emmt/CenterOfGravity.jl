@@ -1,6 +1,9 @@
 using CenterOfGravity
 using Test, Random
 
+include("PortableRandomGenerators.jl")
+using .PortableRandomGenerators: SimpleRandomGenerator
+
 @testset "Windowed arrays  " begin
     # Utilities.
     let to_type = CenterOfGravity.WindowedArrays.to_type
@@ -127,7 +130,7 @@ maxabsdif(a, b) = maximum(abs.(a .- b))
     mdl = [20*exp(-β*((x1 - c[1])^2 + (x2 - c[2])^2))
            for x1 in 1:dims[1], x2 in 1:dims[2]];
     # Add some noise.
-    rng = MersenneTwister(1234); # for reproducible results
+    rng = SimpleRandomGenerator(0); # for reproducible results
     σ = sqrt.(0.01*mdl .+ 0.3^2); # standard deviation of noise
     dat = mdl + σ .* randn(rng, Float64, size(mdl));
     wgt = 1 ./ σ.^2; # precision matrix
@@ -137,46 +140,46 @@ maxabsdif(a, b) = maximum(abs.(a .- b))
 
     # Tests with a uniformly true sliding window.
     win = SlidingWindow(J...);
-    for r in (1 => (9.039929, 21.050560),
-              2 => (8.957942, 21.617320),
-              3 => (8.941763, 21.639933))
+    for r in (1 => (9.232953, 21.075790),
+              2 => (9.030415, 21.653912),
+              3 => (9.018779, 21.708585))
         @test maxabsdif(center_of_gravity(
             dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    for r in (1 => (9.039929, 21.050560, 0.152842, -0.157663, 0.246084),
-              2 => (8.957942, 21.617320, 0.023743, -0.000187, 0.025506),
-              3 => (8.941763, 21.639933, 0.023928,  0.000032, 0.024067))
+    for r in (1 => (9.232953, 21.075790, 0.138879, -0.147755, 0.243262),
+              2 => (9.030415, 21.653912, 0.023298, -0.000264, 0.025152),
+              3 => (9.018779, 21.708585, 0.023363, -0.000002, 0.023433))
         @test maxabsdif(center_of_gravity_with_covariance(
             dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    for r in (1 => (9.039929, 21.050560, 0.014310, -0.014824, 0.023063),
-              2 => (8.957942, 21.617320, 0.002216, -0.000018, 0.002381),
-              3 => (8.941763, 21.639933, 0.002233,  0.000003, 0.002245))
+    for r in (1 => (9.232953, 21.075790, 0.012959, -0.013866, 0.022807),
+              2 => (9.030415, 21.653912, 0.002175, -0.000026, 0.002348),
+              3 => (9.018779, 21.708585, 0.002180, -0.000000, 0.002187))
         @test maxabsdif(center_of_gravity_with_covariance(
             dat, win, c0...; maxiter=r.first, precision=wgt),
                         r.second) ≤ 1e-6
     end
 
     # Idem but omitting negative pixels.
-    for r in (1 => (9.339042, 20.753295),
-              2 => (8.974022, 21.604980),
-              3 => (8.961886, 21.677506))
+    for r in (1 => (9.444462, 20.756587),
+              2 => (9.023299, 21.604873),
+              3 => (9.024741, 21.698230))
         @test maxabsdif(center_of_gravity(
             :nonnegative, dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    for r in (1 => (9.339042, 20.753295, 0.060124, -0.066475, 0.120475),
-              2 => (8.974022, 21.604980, 0.013091,  0.000022, 0.016631),
-              3 => (8.961886, 21.677506, 0.012774, -0.000589, 0.013819))
+    for r in (1 => (9.444462, 20.756587, 0.071453, -0.070348, 0.115029),
+              2 => (9.023299, 21.604873, 0.014904, -0.000189, 0.015715),
+              3 => (9.024741, 21.698230, 0.015039,  0.000212, 0.014505))
         @test maxabsdif(center_of_gravity_with_covariance(
             :nonnegative, dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    for r in (1 => (9.339042, 20.753295, 0.005790, -0.006414, 0.011508),
-              2 => (8.974022, 21.604980, 0.001254, -0.000005, 0.001583),
-              3 => (8.961886, 21.677506, 0.001222, -0.000053, 0.001317))
+    for r in (1 => (9.444462, 20.756587, 0.006770, -0.006731, 0.011007),
+              2 => (9.023299, 21.604873, 0.001417, -0.000023, 0.001499),
+              3 => (9.024741, 21.698230, 0.001425,  0.000020, 0.001377))
         @test maxabsdif(center_of_gravity_with_covariance(
             :nonnegative, dat, win, c0...; maxiter=r.first, precision=wgt),
                         r.second) ≤ 1e-6
@@ -184,46 +187,46 @@ maxabsdif(a, b) = maximum(abs.(a .- b))
 
     # Compute center of gravity with uniform weights.
     win = SlidingWindow(ones(Float64, map(length, J)), J...);
-    for r in (1 => (9.039929, 21.050560),
-              2 => (8.957942, 21.617320),
-              3 => (8.941763, 21.639933))
+    for r in (1 => (9.232953, 21.075790),
+              2 => (9.030415, 21.653912),
+              3 => (9.018779, 21.708585))
         @test maxabsdif(center_of_gravity(
             dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    for r in (1 => (9.039929, 21.050560, 0.152842, -0.157663, 0.246084),
-              2 => (8.957942, 21.617320, 0.023743, -0.000187, 0.025506),
-              3 => (8.941763, 21.639933, 0.023928, 0.000032, 0.024067))
+    for r in (1 => (9.232953, 21.075790, 0.138879, -0.147755, 0.243262),
+              2 => (9.030415, 21.653912, 0.023298, -0.000264, 0.025152),
+              3 => (9.018779, 21.708585, 0.023363, -0.000002, 0.023433))
         @test maxabsdif(center_of_gravity_with_covariance(
             dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    for r in (1 => (9.039929, 21.050560, 0.014310, -0.014824, 0.023063),
-              2 => (8.957942, 21.617320, 0.002216, -0.000018, 0.002381),
-              3 => (8.941763, 21.639933, 0.002233, 0.000003, 0.002245))
+    for r in (1 => (9.232953, 21.075790, 0.012959, -0.013866, 0.022807),
+              2 => (9.030415, 21.653912, 0.002175, -0.000026, 0.002348),
+              3 => (9.018779, 21.708585, 0.002180, -0.000000, 0.002187))
         @test maxabsdif(center_of_gravity_with_covariance(
             dat, win, c0...; maxiter=r.first, precision=wgt),
                         r.second) ≤ 1e-6
     end
 
     # Idem but omitting negative pixels.
-    for r in (1 => (9.339042, 20.753295),
-              2 => (8.974022, 21.604980),
-              3 => (8.961886, 21.677506))
+    for r in (1 => (9.444462, 20.756587),
+              2 => (9.023299, 21.604873),
+              3 => (9.024741, 21.698230))
         @test maxabsdif(center_of_gravity(
             :nonnegative, dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    for r in (1 => (9.339042, 20.753295, 0.060124, -0.066475, 0.120475),
-              2 => (8.974022, 21.604980, 0.013091,  0.000022, 0.016631),
-              3 => (8.961886, 21.677506, 0.012774, -0.000589, 0.013819))
+    for r in (1 => (9.444462, 20.756587, 0.071453, -0.070348, 0.115029),
+              2 => (9.023299, 21.604873, 0.014904, -0.000189, 0.015715),
+              3 => (9.024741, 21.698230, 0.015039,  0.000212, 0.014505))
         @test maxabsdif(center_of_gravity_with_covariance(
             :nonnegative, dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    for r in (1 => (9.339042, 20.753295, 0.005790, -0.006414, 0.011508),
-              2 => (8.974022, 21.604980, 0.001254, -0.000005, 0.001583),
-              3 => (8.961886, 21.677506, 0.001222, -0.000053, 0.001317))
+    for r in (1 => (9.444462, 20.756587, 0.006770, -0.006731, 0.011007),
+              2 => (9.023299, 21.604873, 0.001417, -0.000023, 0.001499),
+              3 => (9.024741, 21.698230, 0.001425,  0.000020, 0.001377))
         @test maxabsdif(center_of_gravity_with_covariance(
             :nonnegative, dat, win, c0...; maxiter=r.first, precision=wgt),
                         r.second) ≤ 1e-6
@@ -232,46 +235,46 @@ maxabsdif(a, b) = maximum(abs.(a .- b))
     ## Compute center of gravity with uniform weights without corners.
     msk = [round(Int, sqrt(x1^2 + x2^2)) ≤ 7 for x1 in J[1], x2 in J[2]];
     win = SlidingWindow(msk);
-    for r in (1 => (9.669801, 20.649462),
-              2 => (8.930564, 21.634711),
-              3 => (8.976497, 21.650224))
+    for r in (1 => (9.800942, 20.590818),
+              2 => (9.054198, 21.631061),
+              3 => (9.022643, 21.665028))
         @test maxabsdif(center_of_gravity(
             dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    for r in (1 => (9.669801, 20.649462, 0.181703, -0.203001, 0.342381),
-              2 => (8.930564, 21.634711, 0.017472, -0.002954, 0.016820),
-              3 => (8.976497, 21.650224, 0.014105, -0.000008, 0.014217))
+    for r in (1 => (9.800942, 20.590818, 0.165840, -0.186804, 0.325062),
+              2 => (9.054198, 21.631061, 0.016562, -0.002769, 0.016492),
+              3 => (9.022643, 21.665028, 0.013900,  0.000003, 0.013989))
         @test maxabsdif(center_of_gravity_with_covariance(
             dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    for r in (1 => (9.669801, 20.649462, 0.016932, -0.018973, 0.031999),
-              2 => (8.930564, 21.634711, 0.001668, -0.000284, 0.001615),
-              3 => (8.976497, 21.650224, 0.001349, -0.000001, 0.001359))
+    for r in (1 => (9.800942, 20.590818, 0.015417, -0.017425, 0.030356),
+              2 => (9.054198, 21.631061, 0.001579, -0.000265, 0.001585),
+              3 => (9.022643, 21.665028, 0.001329,  0.000000, 0.001337))
         @test maxabsdif(center_of_gravity_with_covariance(
             dat, win, c0...; maxiter=r.first, precision=wgt),
                         r.second) ≤ 1e-6
     end
 
     # Idem but omitting negative pixels.
-    for r in (1 => (9.943275, 20.305350),
-              2 => (9.013273, 21.569760),
-              3 => (8.978609, 21.663092))
+    for r in (1 => (10.007679, 20.275445),
+              2 => ( 9.068533, 21.572627),
+              3 => ( 9.016294, 21.676906))
         @test maxabsdif(center_of_gravity(
             :nonnegative, dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    for r in (1 => (9.943275, 20.305350, 0.069748, -0.077101, 0.145674),
-              2 => (9.013273, 21.569760, 0.010500, -0.002772, 0.014530),
-              3 => (8.978609, 21.663092, 0.008630,  0.000421, 0.009745))
+    for r in (1 => (10.007679, 20.275445, 0.082834, -0.085736, 0.150969),
+              2 => ( 9.068533, 21.572627, 0.012358, -0.003024, 0.013808),
+              3 => ( 9.016294, 21.676906, 0.010154,  0.000091, 0.009271))
         @test maxabsdif(center_of_gravity_with_covariance(
             :nonnegative, dat, win, c0...; maxiter=r.first, precision=nothing),
                         r.second) ≤ 1e-6
     end
-    for r in (1 => (9.943275, 20.305350, 0.006657, -0.007382, 0.013914),
-              2 => (9.013273, 21.569760, 0.001038, -0.000274, 0.001413),
-              3 => (8.978609, 21.663092, 0.000850,  0.000038, 0.000951))
+    for r in (1 => (10.007679, 20.275445, 0.007803, -0.008123, 0.014350),
+              2 => ( 9.068533, 21.572627, 0.001203, -0.000295, 0.001348),
+              3 => ( 9.016294, 21.676906, 0.000988,  0.000009, 0.000908))
         @test maxabsdif(center_of_gravity_with_covariance(
             :nonnegative, dat, win, c0...; maxiter=r.first, precision=wgt),
                         r.second) ≤ 1e-6
