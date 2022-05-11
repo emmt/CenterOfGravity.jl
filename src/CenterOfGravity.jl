@@ -8,7 +8,6 @@ export
     center_of_gravity_with_precision
 
 using CartesianBoxes
-using StaticArrays
 
 include("WindowedArrays.jl")
 using .WindowedArrays

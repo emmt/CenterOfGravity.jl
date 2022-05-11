@@ -373,19 +373,31 @@ function center_of_gravity_with_covariance(
                             C[4] + w*x1*x1,
                             C[5] + w*x1*x2,
                             C[6] + w*x2*x2)))
-            # Form the covariance matrix of u = (u0,u1,u2)'.
-            Cu = SMatrix{3,3,T}(C[1], C[2], C[3],
-                                C[2], C[4], C[5],
-                                C[3], C[5], C[6])
-            # Form the Jacobian matrix ∂x/∂u with x = (c1,c2)' (NOTE: arguments
-            # of `SMatrix` are given in column-major storage order so it looks
-            # like J' not J).
-            J = SMatrix{2,3,T}(-u1/u0^2, -u2/u0^2,
-                               1/u0,     z,
-                               z,        1/u0)
-            # Form the covariance matrix of x.
-            Cx = J*Cu*J'
-            return (c1, c2, Cx[1,1], Cx[1,2], Cx[2,2])
+            # Extract the coefficients of the covariance matrix Cu of
+            # u = (u0,u1,u2)' which is:
+            #
+            #     Cu = [C[1]  C[2]  C[3];
+            #           C[2]  C[4]  C[5];
+            #           C[3]  C[5]  C[6]]
+            #
+            C1, C2, C3, C4, C5, C6 = C
+            #
+            # Compute the coefficients J1, J2, and J3 of the Jacobian matrix
+            # ∂x/∂u with x = (c1,c2)' which is:
+            #
+            #     J = [J1 J2 0; J3 0 J2] = [-u1/u0^2  1/u0  0;
+            #                               -u2/u0^2   0   1/u0]
+            J1 = -u1/u0^2
+            J2 = 1/u0
+            J3 = -u2/u0^2
+            #
+            # Return the center of gravity and the coefficients of
+            # the covariance matrix Cx = J*Cu*J' of x.
+            #
+            return (c1, c2,
+                    C4*J2^2 + 2*C2*J1*J2 + C1*J1^2,
+                    (C2*J2 + C1*J1)*J3 + C5*J2^2 + C3*J1*J2,
+                    C1*J3^2 + 2*C3*J2*J3 + C6*J2^2)
         end
     end
 end
