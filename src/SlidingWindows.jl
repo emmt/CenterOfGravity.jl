@@ -40,9 +40,9 @@ window (indices will be approximately centered along that dimension); otherwise
 window.
 
 """
-struct SlidingWindow{T,N,P,I} <: AbstractArray{T,N}
+struct SlidingWindow{T,N,P,R} <: AbstractArray{T,N}
     wgt::P             # array of weights
-    inds::I            # array indices NTuple{N,AbstractUnitRange{Int}}
+    inds::R            # array indices NTuple{N,AbstractUnitRange{Int}}
     off::NTuple{N,Int} # offsets along each dimensions
     dims::Dims{N}      # dimensions # FIXME: not needed?
 end
@@ -90,11 +90,11 @@ SlidingWindow(inds::SlidingWindowAxes) = SlidingWindow(UniformlyTrue(), inds)
 SlidingWindow(wgt::UniformlyTrue, inds::SlidingWindowAxes) =
     SlidingWindow(wgt, map(to_sliding_axis, inds))
 function SlidingWindow(wgt::P,
-                       inds::I) where {N,P<:UniformlyTrue,
-                                       I<:NTuple{N,AbstractUnitRange{Int}}}
+                       inds::R) where {N,P<:UniformlyTrue,
+                                       R<:NTuple{N,AbstractUnitRange{Int}}}
     dims = map(to_dimension, inds)
     off = ntuple(x -> 0, Val(N))
-    return SlidingWindow{Bool,N,P,I}(wgt, inds, off, dims)
+    return SlidingWindow{Bool,N,P,R}(wgt, inds, off, dims)
 end
 
 # Constructors for weighted sliding windows.
@@ -105,13 +105,13 @@ SlidingWindow(wgt::AbstractArray{T,N}, inds::Vararg{SlidingWindowAxis,N}) where 
 SlidingWindow(wgt::AbstractArray{T,N}, inds::SlidingWindowAxes{N}) where {T,N} =
     SlidingWindow(wgt, map(to_sliding_axis, inds))
 function SlidingWindow(wgt::P,
-                       inds::I) where {T,N,P<:AbstractArray{T,N},
-                                       I<:NTuple{N,AbstractUnitRange{Int}}}
+                       inds::R) where {T,N,P<:AbstractArray{T,N},
+                                       R<:NTuple{N,AbstractUnitRange{Int}}}
     dims = size(wgt)
     map(length, inds) == dims || error(
         "window indices must match the weights size")
     off = map((i,j) -> first(j) - first(i), inds, axes(wgt))
-    return SlidingWindow{T,N,P,I}(wgt, inds, off, dims)
+    return SlidingWindow{T,N,P,R}(wgt, inds, off, dims)
 end
 
 """
