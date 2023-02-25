@@ -9,18 +9,18 @@ module WindowedArrays
 export WindowedArray
 
 """
-    WindowedArray(A, J1, ..., JN)
+    B = WindowedArray(A, J1, ..., JN)
 
-yields an array-like object corresponding to `A[J1,...,JN]` where `A` is an
+yields an array-like object `B` corresponding to `A[J1,...,JN]` where `A` is an
 `N`-dimensional array while `J1`, ..., `JN` are colons or integer-valued
-unit-ranges which specify the ranges to take along the dimensions of `A`.  The
+unit-ranges which specify the ranges to take along the dimensions of `A`. The
 returned object shares its contents with `A`.
 
-The sub-region may also be specified by an `N`-tuple `(J1,...,JN)`.
+The sub-region may also be specified as an `N`-tuple `(J1,...,JN)`.
 
-The difference with the view `view(A,J1,...,JN)` is that the indices in the
-windowed array are the same (but restricted to a smaller region) as in the
-orginal array.  The same kind of object could also be built by composing a
+The difference with the result of `view(A,J1,...,JN)` is that the indices in
+the windowed array are the same (but restricted to a smaller region) as in the
+orginal array. The same kind of object could also be built by composing a
 *view* and an *offset array* provided by the `OffsetArrays` package.
 
 Call `parent(B)` to get the array storing the values of a windowed array `B`.

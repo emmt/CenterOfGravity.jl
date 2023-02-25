@@ -27,7 +27,7 @@ to_algorithm(alg::Symbol) = Val(alg)
 """
     to_type(T, x) -> x′::T
 
-converts argument `x` to type `T`.  Compared to `convert(T,x)` a type assertion
+converts argument `x` to type `T`. Compared to `convert(T,x)` a type assertion
 is imposed.
 
 """
@@ -42,43 +42,43 @@ centered at initial position `pos` (rounded to nearest pixel) to select and
 weight the pixels taken into account for computing the center of gravity.
 
 The initial and final positions `pos` and `cog` are given in fractional index
-units relative to the image array `img`.  The initial position `pos` may be
+units relative to the image array `img`. The initial position `pos` may be
 specified in a variety of forms (2 reals, a 2-tuple of reals, a 2-dimensional
 Cartesian index, etc.), but the result `cog` is always a 2-tuple of
 floating-point values.
 
 The keyword `maxiter` (1 by default) may be used to specify the maximum number
-of iterations of the algorithm (at least one iteration is performed).  At each
+of iterations of the algorithm (at least one iteration is performed). At each
 iteration, the algorithm updates the position of the center of gravity by
 moving the sliding window at the previous estimate of this position (initially
-specified by argument `pos`).  The `k`-th coordinate of the new center of
+specified by argument `pos`). The `k`-th coordinate of the new center of
 gravity is computed as:
 
     cog[k] = (sum_{i ∈ R} img[i]*win[i-j]*x[i][k])/
         (sum_{i ∈ R} img[i]*win[i-j])
 
-where `R` gives the indices of the pixels take into account, `j` is the offset
+where `R` gives the indices of the pixels taken into account, `j` is the offset
 to best center the sliding window at the previously estimated position of the
-center of gravity, and `x[i][j]` denotes the `k`-th component of the position
-at index `i` in the image `img`.  The set `R` depends on the offset `j` and on
+center of gravity, and `x[i][k]` denotes the `k`-th component of the position
+at index `i` in the image `img`. The set `R` depends on the offset `j` and on
 the values of the image and of the sliding window in the intersection of their
 supports when the sliding window is moved by offset `j` (see below).
 
 Note that, if the sliding window is a simple mask (its elements are booleans),
-the above formula amounts to computing the usual center of gravity.  If the
+the above formula amounts to computing the usual center of gravity. If the
 sliding window has values, the *weighted* center of gravity is computed.
 
 Optional argument `alg` specifies the algorithm to use, it has the form `sym`
 or `Val(sym)` where `sym` is one of the following symbols:
 
 - `:simple` to compute the center of gravity on all values inside the sliding
-  window.  This is equivalent to having the set `R` containing indices `i` such
-  that `img[i]` and `win[i-j]` are in bounds.
+  window. This is equivalent to having the set `R` containing indices `i` such
+  that `img[i]` and `win[i-j]` are in bounds. This is the default algorithm.
 
 - `:nonnegative` to compute the center of gravity on all nonnegative values
-  inside the sliding window.  This is equivalent to having the set `R`
-  containing indices `i` such that `img[i]` and `win[i-j]` are in bound,
-  and such that `img[i] > 0` and `win[i-j] > 0`.
+  inside the sliding window. This is equivalent to having the set `R`
+  containing indices `i` such that `img[i]` and `win[i-j]` are in bound, and
+  such that `img[i] > 0` and `win[i-j] > 0`.
 
 Use a `WindowedArray` instead of a `view` for the input image if you want to
 restrict the computations to a rectangular region of the image while preserving
@@ -88,13 +88,13 @@ image coordinates:
 
 For consistency with [`center_of_gravity_with_covariance`](@ref), keyword
 `precision` can be specified to provide the pixel-wise precision of the image
-`img`.  If specified, all its entries must be nonnegative (this is not checked)
+`img`. If specified, all its entries must be nonnegative (this is not checked)
 and only pixels with non-zero precision are taken into account in the
 computation of the center of gravity (in addition of other selection rules).
 
 !!! note
     If algorithm is fully specified, i.e. as `alg = Val(:...)`, the code does
-    not allocate any memory.  This is of importance for real-time applications.
+    not allocate any memory. This is of importance for real-time applications.
 
 """ center_of_gravity
 
@@ -133,16 +133,16 @@ end
 
 # NOTE: This version is able to deliver ~ 10.7 Gflops on an AMD Ryzen
 #       Threadripper 2950X CPU (with 16 cores but a single thread is used) with
-#       the most simple algorithm (assuming 10 operations/pixel).  This does
-#       not depend much on the algorithm (assuming 12 operations/pixel for the
-#       most complex one) nor on the size of the sliding window (15×15 and
-#       11×11 were tried).  The speed is the same in single and double
-#       precision.  Forcing SIMD worsen the performances so we do not use
-#       `@simd`.  A more basic version not using closures nor lambda functions
-#       was found to be as fast, so we keep the version with lambda functions
-#       as it is much more flexible and yet readable (only the computation of
-#       the "weights" depends on the algorithm).  The same kind of conclusions
-#       have been made for the `LocalFilter` package.
+#       the most simple algorithm (assuming 10 operations/pixel). This does not
+#       depend much on the algorithm (assuming 12 operations/pixel for the most
+#       complex one) nor on the size of the sliding window (15×15 and 11×11
+#       were tried). The speed is the same in single and double precision.
+#       Forcing SIMD worsen the performances so we do not use `@simd`. A more
+#       basic version not using closures nor lambda functions was found to be
+#       as fast, so we keep the version with lambda functions as it is much
+#       more flexible and yet readable (only the computation of the "weights"
+#       depends on the algorithm). The same kind of conclusions have been made
+#       for the `LocalFilter` package.
 function center_of_gravity(
     alg::Val,
     img::AbstractMatrix{T},
@@ -175,7 +175,7 @@ function center_of_gravity(
         # sliding window relative to the image.
         R = img_box ∩ (win_box + (j1,j2)) # ROI for indices `i`
 
-        # Compute the terms needed by the center of gravity.  To avoid adding
+        # Compute the terms needed by the center of gravity. To avoid adding
         # multiple index offsets when indexing the sliding window, we note
         # that:
         #
@@ -239,12 +239,12 @@ associated covariance matrix.
 See [`center_of_gravity`](@ref) for a description of common parameters.
 
 Keyword `precision` can be specified to provide the pixel-wise precision of the
-image `img`.  If specified, all its entries must be nonnegative (this is not
+image `img`. If specified, all its entries must be nonnegative (this is not
 checked) and only pixels with non-zero precision are taken into account in the
-computation of the center of gravity (in addition of other selection rules).
-If not specified, all pixels are assumed valid, the data noise is assumed
-i.i.d. (independent and identically distributed), and the returned covariance
-must be scaled by the noise variance.
+computation of the center of gravity (in addition of other selection rules). If
+not specified, all pixels are assumed valid, the data noise is assumed i.i.d.
+(independent and identically distributed), and the returned covariance must be
+scaled by the noise variance.
 
 """ center_of_gravity_with_covariance
 
@@ -317,7 +317,7 @@ function center_of_gravity_with_covariance(
         # sliding window relative to the image.
         R = img_box ∩ (win_box + (j1,j2)) # ROI for indices `i`
 
-        # Compute the terms needed by the center of gravity.  To avoid adding
+        # Compute the terms needed by the center of gravity. To avoid adding
         # multiple index offsets when indexing the sliding window, we note
         # that:
         #
@@ -346,7 +346,7 @@ function center_of_gravity_with_covariance(
         c2 += u2/u0
 
         # Increment number of iterations and assume convergence if the maximum
-        # number of iterations have been reached.  NOTE: It is important to not
+        # number of iterations have been reached. NOTE: It is important to not
         # change offsets (j1,j2) once convergence of the algorithm has been
         # decided (because the code to integrate the terms of the covariance
         # could use out of bound indices).
@@ -439,8 +439,8 @@ end
 yields the weight of a given pixel in the terms required by the centrer of
 gravity as computed by algorithm `alg` and with `p ≥ 0` the precision of the
 pixel (optional), `a` the pixel intensity and `b` the corresponding value in
-the sliding window.  Typically `w = a*b`.  If the precision `p` is `nothing`,
-it is assumed that all pixels have non-zero precision.
+the sliding window. Typically `w = a*b`. If the precision `p` is `nothing`, it
+is assumed that all pixels have non-zero precision.
 
 """
 cog_weight(::Val{:simple}, ::Nothing, a::T, b::T) where {T<:AbstractFloat} = a*b
@@ -474,7 +474,7 @@ cog_weight(::Val{:nonnegative}, p::T, a::T, b::Bool) where {T<:AbstractFloat} =
 yields the weight of a given pixel in the terms required to estimate the
 covariance of the centrer of gravity as computed by algorithm `alg` and with `p
 ≥ 0` the precision of the pixel (optional), `a` the pixel intensity, and `b`
-the corresponding value in the sliding window.  Typically `w = b^2/p`.  If the
+the corresponding value in the sliding window. Typically `w = b^2/p`. If the
 precision `p` is `nothing`, it is assumed that the noise is i.i.d. and the
 resulting covariance has to be multiplied by the variance of the noise.
 
@@ -506,7 +506,7 @@ cog_cov_weight(::Val{:nonnegative}, p::T, a::T, b::Bool) where {T<:AbstractFloat
 """
     cog_loop([P,] A, B, I1,j1,c1, I2,j2,c2, state, update)
 
-runs the loop for computing the center of gravity (COG).  This is equivalent to:
+runs the loop for computing the center of gravity (COG). This is equivalent to:
 
     for i2 in I2, i1 in I1
         state = update(state, A[i1,i2], B[i1-j1,i2-j2], i1 - c1, i2 - c2)
