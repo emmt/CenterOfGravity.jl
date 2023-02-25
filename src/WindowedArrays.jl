@@ -28,23 +28,21 @@ Call `parent(B)` to get the array storing the values of a windowed array `B`.
 Call `axes(B)` to get the index ranges of a windowed array `B`.
 
 """
-struct WindowedArray{T,N,I<:NTuple{N,AbstractUnitRange{Int}},
-                     P<:AbstractArray{T,N}} <: AbstractArray{T,N}
+struct WindowedArray{T,N,P<:AbstractArray{T,N},
+                     I<:NTuple{N,AbstractUnitRange{Int}}} <: AbstractArray{T,N}
     # Type parameters:
     #   T = element type
     #   N = number of dimensions
-    #   I = type of indices
     #   P = type of parent object backing the storage
+    #   I = type of indices
     parent::P
     indices::I
-    # Provide inner constructor to prevent building objects with unchecked
+    # "Private" inner constructor to prevent building objects with unchecked
     # contents.
-    function WindowedArray(parent::P,
-                           indices::I,
-                           ::Val{:checked}) where {
-                               T,N,P<:AbstractArray{T,N},
-                               I<:NTuple{N,AbstractUnitRange{Int}}}
-        return new{T,N,I,P}(parent, indices)
+    function WindowedArray(::Val{:inbounds}, parent::P,
+                           indices::I) where {T,N,P<:AbstractArray{T,N},
+                                              I<:NTuple{N,AbstractUnitRange{Int}}}
+        return new{T,N,P,I}(parent, indices)
     end
 end
 
@@ -96,7 +94,7 @@ function WindowedArray(A::AbstractArray{T,N},
         return subrange(J, :)
     end
 
-    return WindowedArray(A, map(subrange, axes(A), J), Val(:checked))
+    return WindowedArray(Val(:inbounds), A, map(subrange, axes(A), J))
 end
 
 """
