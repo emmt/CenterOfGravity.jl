@@ -10,7 +10,7 @@ type `T` as required by the `center_of_gravity` method.
 """
 to_position(::Type{T}, pos::NTuple{2,T}) where {T} = pos
 to_position(::Type{T}, pos::NTuple{2,Real}) where {T} =
-    (to_type(T, pos[1]), to_type(T, pos[2]))
+    (as(T, pos[1]), as(T, pos[2]))
 to_position(::Type{T}, pos::CartesianIndex{2}) where {T} =
     to_position(T, Tuple(pos))
 
@@ -23,16 +23,6 @@ yields algorithm `alg` converted to the king of instance required by the
 """
 to_algorithm(alg::Val) = alg
 to_algorithm(alg::Symbol) = Val(alg)
-
-"""
-    to_type(T, x) -> x′::T
-
-converts argument `x` to type `T`. Compared to `convert(T,x)` a type assertion
-is imposed.
-
-"""
-to_type(::Type{T}, x::T) where {T} = x
-to_type(::Type{T}, x) where {T} = convert(T, x)::T
 
 """
     center_of_gravity([alg = :simple,] img, win, pos) -> cog

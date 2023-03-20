@@ -5,12 +5,6 @@ include("PortableRandomGenerators.jl")
 using .PortableRandomGenerators: SimpleRandomGenerator
 
 @testset "Windowed arrays  " begin
-    # Utilities.
-    let to_type = CenterOfGravity.WindowedArrays.to_type
-        @test to_type(Int, UInt(1)) isa Int
-        @test to_type(Int, 1) isa Int
-    end
-
     # Fully specified ranges.
     A = reshape(collect(1:20), (4,5))
     J = (2:3, 3:5)
@@ -44,10 +38,6 @@ end
 
 @testset "Sliding windows  " begin
     # Utilities.
-    let to_type = CenterOfGravity.SlidingWindows.to_type
-        @test to_type(Int, UInt(1)) isa Int
-        @test to_type(Int, 1) isa Int
-    end
     let to_sliding_axis = CenterOfGravity.SlidingWindows.to_sliding_axis
         @test to_sliding_axis(Base.OneTo(5)) isa Base.OneTo{Int}
         @test to_sliding_axis(Base.OneTo(Int16(5))) isa Base.OneTo{Int}
@@ -107,10 +97,6 @@ maxabsdif(a, b) = maximum(abs.(a .- b))
 
 @testset "Center of gravity" begin
     # Utilities.
-    let to_type = CenterOfGravity.to_type
-        @test to_type(Int, UInt(1)) isa Int
-        @test to_type(Int, 1) isa Int
-    end
     let to_position = CenterOfGravity.to_position
         x1, x2 = 2.1, -1.4
         @test to_position(typeof(x1), (x1,x2)) === (x1,x2)

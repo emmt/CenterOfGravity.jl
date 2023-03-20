@@ -8,6 +8,8 @@ module WindowedArrays
 
 export WindowedArray
 
+using AsType
+
 """
     B = WindowedArray(A, J1, ..., JN)
 
@@ -86,7 +88,7 @@ function WindowedArray(A::AbstractArray{T,N},
     # Private method to check and convert sub-ranges for windowed array.
     subrange(I::AbstractUnitRange{Int}, ::Colon) = I
     subrange(I::AbstractUnitRange{<:Integer}, ::Colon) =
-        to_type(Int,first(I)):to_type(Int,last(I))
+        as(Int,first(I)):as(Int,last(I))
     subrange(I::Base.OneTo{<:Integer}, ::Colon) = Base.OneTo{Int}(length(I))
     function subrange(I::AbstractUnitRange{<:Integer},
                       J::AbstractUnitRange{<:Integer})
@@ -96,15 +98,5 @@ function WindowedArray(A::AbstractArray{T,N},
 
     return WindowedArray(Val(:inbounds), A, map(subrange, axes(A), J))
 end
-
-"""
-    to_type(T, x) -> x′::T
-
-converts argument `x` to type `T`.  Compared to `convert(T,x)` a type assertion
-is imposed.
-
-"""
-to_type(::Type{T}, x::T) where {T} = x
-to_type(::Type{T}, x) where {T} = convert(T, x)::T
 
 end # module

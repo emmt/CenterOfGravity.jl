@@ -4,6 +4,7 @@ authors = ["Éric Thiébaut <eric.thiebaut@univ-lyon1.fr> and contributors"]
 version = "0.1.1"
 
 [deps]
+AsType = "ca91d8e0-3195-446d-9999-6c164cca1bdd"
 CartesianBoxes = "f894539e-422c-4c16-819a-0e1d0163d378"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 

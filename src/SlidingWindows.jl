@@ -115,23 +115,13 @@ function SlidingWindow(wgt::P,
 end
 
 """
-    to_type(T, x) -> x′::T
-
-converts argument `x` to type `T`.  Compared to `convert(T,x)` a type assertion
-is imposed.
-
-"""
-to_type(::Type{T}, x::T) where {T} = x
-to_type(::Type{T}, x) where {T} = convert(T, x)::T
-
-"""
     to_dimension(x)
 
 converts argument `x` into an array dimension of type `Int`.
 
 """
 to_dimension(x::Int) = x
-to_dimension(x::Integer) = to_type(Int, x)
+to_dimension(x::Integer) = as(Int, x)
 to_dimension(x::AbstractUnitRange{<:Integer}) = to_dimension(length(x))
 
 """
@@ -142,13 +132,12 @@ conventions assumed by sliding windows.
 
 """
 to_sliding_axis(x::AbstractUnitRange{Int}) = x
-to_sliding_axis(x::AbstractUnitRange{<:Integer}) =
-    to_type(Int, first(x)):to_type(Int, last(x))
+to_sliding_axis(x::AbstractUnitRange{<:Integer}) = as(Int, first(x)):as(Int, last(x))
 to_sliding_axis(x::Base.OneTo{<:Integer}) = Base.OneTo{Int}(length(x))
 to_sliding_axis(x::Integer) = begin
     # Use the same conventions as in `fftshift` to approximately center the
     # range of indices.
-    n = max(to_type(Int, x), 0)
+    n = max(as(Int, x), 0)
     i = -(n >> 1)
     return i:(n-1+i)
 end
