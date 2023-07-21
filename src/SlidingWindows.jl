@@ -8,6 +8,8 @@ module SlidingWindows
 
 export SlidingWindow, UniformlyTrue
 
+using TypeUtils
+
 """
     UniformlyTrue()
 
