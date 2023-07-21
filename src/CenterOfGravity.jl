@@ -7,7 +7,7 @@ export
     center_of_gravity_with_covariance,
     center_of_gravity_with_precision
 
-using AsType, CartesianBoxes
+using TypeUtils, CartesianBoxes
 
 include("WindowedArrays.jl")
 using .WindowedArrays

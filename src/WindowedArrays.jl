@@ -8,7 +8,7 @@ module WindowedArrays
 
 export WindowedArray
 
-using AsType
+using TypeUtils
 
 """
     B = WindowedArray(A, J1, ..., JN)
