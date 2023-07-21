@@ -1,7 +1,7 @@
 name = "CenterOfGravity"
 uuid = "d98d927a-eebc-4e2e-bfd8-b8854602986e"
 authors = ["Éric Thiébaut <eric.thiebaut@univ-lyon1.fr> and contributors"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 CartesianBoxes = "f894539e-422c-4c16-819a-0e1d0163d378"
